@@ -9,6 +9,8 @@ import pathlib
 import time
 from shutil import move
 from PIL import ImageFont, ImageDraw
+import urllib3
+import requests
 
 
 def read_config(props_path: str) -> ConfigParser:
@@ -54,7 +56,7 @@ class Snapper:
         dest_fname = self.get_image_path(tstamp)
         im = self.camera.get_snap()
         if not im:
-            print("Failed to get image from reolink camera")
+            print("Failed to get image from reolink camera", flush=True)
             return "FAILED"
         im.save(dest_fname)
         tmp = self.cfg["storage"]["link"] + "_temp.jpg"
@@ -70,26 +72,37 @@ class Snapper:
         move(tmp, self.cfg["storage"]["link"])
         return dest_fname
 
+    def snap(self):
+        next_t = int(time.time())
+        while True:
+            now = time.time()
+            if now < next_t:
+                time.sleep(0.5)
+                continue
+            next_t = int(time.time()) + self.cfg["storage"].getint("every")
+            dest_fname = self.save_image(now)
+            print(f"Saved {dest_fname}", flush=True)
+
 
 def main():
     cfg_fname = "/etc/reolink.cfg"
     if len(sys.argv) > 1:
         cfg_fname = sys.argv[1]
     cfg = read_config(cfg_fname)
-    cam = Camera(
-        cfg["camera"]["ip"],
-        cfg["camera"]["username"],
-        cfg["camera"]["password"])
-    snapper = Snapper(cam, cfg)
-    next_t = int(time.time())
-    while True:
-        now = time.time()
-        if now < next_t:
-            time.sleep(0.5)
-            continue
-        next_t = int(time.time()) + cfg["storage"].getint("every")
-        dest_fname = snapper.save_image(now)
-        print(f"Saved {dest_fname}")
+    cam = None
+    while not cam:
+        try:
+            cam = Camera(
+                cfg["camera"]["ip"],
+                cfg["camera"]["username"],
+                cfg["camera"]["password"])
+            snapper = Snapper(cam, cfg)
+            snapper.snap()
+        except (urllib3.exceptions.HTTPError,
+                requests.exceptions.ConnectionError) as e:
+            print("Error snapping: ", e, flush=True)
+            cam = None
+            time.sleep(cfg["storage"].getint("every"))
 
 
 if __name__ == "__main__":
