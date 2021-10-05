@@ -11,28 +11,7 @@ from shutil import move
 from PIL import ImageFont, ImageDraw
 import urllib3
 import requests
-
-
-def read_config(props_path: str) -> ConfigParser:
-    """Reads in a properties file into variables.
-
-    # /etc/reolink.cfg
-        [camera]
-        ip={ip_address}
-        username={username}
-        password={password}
-        [storage]
-        dir={where to save the images}
-        link={link to the latest image}
-        every={seconds between pictures}
-        [draw]
-        font={ttf file for the font to use}
-        size={font size, for example 24}
-    """
-    config = ConfigParser()
-    assert os.path.exists(props_path), f"Path does not exist: {props_path}"
-    config.read(props_path)
-    return config
+from reottimis import read_config
 
 
 class Snapper:
@@ -41,10 +20,11 @@ class Snapper:
         self.camera = camera
         self.cfg = cfg
         self.font = ImageFont.truetype(cfg["draw"]["font"],
-                                       cfg["draw"].getint("size"))
+                                       cfg["draw"].getint("size"),
+                                       layout_engine=ImageFont.LAYOUT_BASIC)
 
     def get_image_path(self, tstamp: float) -> str:
-        now = datetime.fromtimestamp(tstamp)
+        now = datetime.utcfromtimestamp(tstamp)
         path = os.path.join(
             self.cfg["storage"]["dir"],
             now.strftime("%Y/%m/%d/%H/%M"))
@@ -61,7 +41,7 @@ class Snapper:
         im.save(dest_fname)
         tmp = self.cfg["storage"]["link"] + "_temp.jpg"
         draw = ImageDraw.Draw(im)
-        now = datetime.fromtimestamp(tstamp)
+        now = datetime.utcfromtimestamp(tstamp)
         txt = now.strftime("%Y-%m-%d %H:%M:%S UTC")
         origin = (0, 0)
         dims = self.font.getsize(txt)
