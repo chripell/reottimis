@@ -17,6 +17,10 @@ def read_config(props_path: str) -> ConfigParser:
         [draw]
         font={ttf file for the font to use}
         size={font size, for example 24}
+        [geo]
+        lat=
+        long=
+        alt=
     """
     config = ConfigParser()
     assert os.path.exists(props_path), f"Path does not exist: {props_path}"
