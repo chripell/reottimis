@@ -14,6 +14,7 @@ def read_config(props_path: str) -> ConfigParser:
         dir={where to save the images}
         link={link to the latest image}
         every={seconds between pictures}
+        video={where to put videos}
         [draw]
         font={ttf file for the font to use}
         size={font size, for example 24}
