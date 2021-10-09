@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily reottimis video generation and clean up
+Requires=reottimis_daily.service
+
+[Timer]
+Unit=reottimis_daily.service
+OnCalendar=*-*-* 09:08:00
+
+[Install]
+WantedBy=timers.target

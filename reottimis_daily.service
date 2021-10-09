@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Video creation and clean up.
+Wants=reottimis_daily.timer
+
+[Service]
+Type=oneshot
+User=chri
+ExecStart=/mnt/d/chri/reottimis/start_daily.sh
+
+[Install]
+WantedBy=multi-user.target
