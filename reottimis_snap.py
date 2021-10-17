@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
+"""
+Snap and save picture from a reolink camera.
+"""
+
+# pylint: disable=C0103
+# pylint: disable=R0903
+
 import os
 import sys
 from configparser import ConfigParser
-from reolinkapi import Camera
 from datetime import datetime
 import pathlib
 import time
@@ -11,10 +17,12 @@ from shutil import move
 from PIL import ImageFont, ImageDraw
 import urllib3
 import requests
+from reolinkapi import Camera
 from reottimis import read_config
 
 
 class Snapper:
+    """Snap and save a picture from the reolink camera."""
 
     def __init__(self, camera: Camera, cfg: ConfigParser):
         self.camera = camera
@@ -23,7 +31,7 @@ class Snapper:
                                        cfg["draw"].getint("size"),
                                        layout_engine=ImageFont.LAYOUT_BASIC)
 
-    def get_image_path(self, tstamp: float) -> str:
+    def __get_image_path(self, tstamp: float) -> str:
         now = datetime.utcfromtimestamp(tstamp)
         path = os.path.join(
             self.cfg["storage"]["dir"],
@@ -32,8 +40,8 @@ class Snapper:
         fname = now.strftime("%S") + "_" + str(int(now.timestamp()))
         return os.path.join(path, fname) + ".jpg"
 
-    def save_image(self, tstamp: float) -> str:
-        dest_fname = self.get_image_path(tstamp)
+    def __save_image(self, tstamp: float) -> str:
+        dest_fname = self.__get_image_path(tstamp)
         im = self.camera.get_snap()
         if not im:
             print("Failed to get image from reolink camera", flush=True)
@@ -53,6 +61,7 @@ class Snapper:
         return dest_fname
 
     def snap(self):
+        """Snap and save a picture"""
         next_t = int(time.time())
         while True:
             now = time.time()
@@ -60,11 +69,12 @@ class Snapper:
                 time.sleep(0.5)
                 continue
             next_t = int(time.time()) + self.cfg["storage"].getint("every")
-            dest_fname = self.save_image(now)
+            dest_fname = self.__save_image(now)
             print(f"Saved {dest_fname}", flush=True)
 
 
 def main():
+    """Initialize the camera and loop snapping pictures."""
     cfg_fname = "/etc/reolink.cfg"
     if len(sys.argv) > 1:
         cfg_fname = sys.argv[1]
