@@ -22,6 +22,8 @@ def read_config(props_path: str) -> ConfigParser:
         lat=
         long=
         alt=
+        [keep]
+        days=
     """
     config = ConfigParser()
     assert os.path.exists(props_path), f"Path does not exist: {props_path}"
