@@ -131,3 +131,5 @@ dmypy.json
 de421.bsp
 *~
 *.mp4
+*#
+README.html
