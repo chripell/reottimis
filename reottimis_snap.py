@@ -42,7 +42,11 @@ class Snapper:
 
     def __save_image(self, tstamp: float) -> str:
         dest_fname = self.__get_image_path(tstamp)
-        im = self.camera.get_snap()
+        try:
+            im = self.camera.get_snap()
+        except Exception:
+            print(traceback.format_exc())
+            im = None
         if not im:
             print("Failed to get image from reolink camera", flush=True)
             return "FAILED"
