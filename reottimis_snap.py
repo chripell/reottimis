@@ -10,13 +10,14 @@ Snap and save picture from a reolink camera.
 import os
 import sys
 from configparser import ConfigParser
-from datetime import datetime
+from datetime import datetime, UTC
 import pathlib
 import time
 from shutil import move
 from PIL import ImageFont, ImageDraw
 import urllib3
 import requests
+import traceback
 from reolinkapi import Camera
 from reottimis import read_config
 
@@ -28,11 +29,10 @@ class Snapper:
         self.camera = camera
         self.cfg = cfg
         self.font = ImageFont.truetype(cfg["draw"]["font"],
-                                       cfg["draw"].getint("size"),
-                                       layout_engine=ImageFont.LAYOUT_BASIC)
+                                       cfg["draw"].getint("size"))
 
     def __get_image_path(self, tstamp: float) -> str:
-        now = datetime.utcfromtimestamp(tstamp)
+        now = datetime.fromtimestamp(tstamp, UTC)
         path = os.path.join(
             self.cfg["storage"]["dir"],
             now.strftime("%Y/%m/%d/%H/%M"))
@@ -56,7 +56,7 @@ class Snapper:
         now = datetime.utcfromtimestamp(tstamp)
         txt = now.strftime("%Y-%m-%d %H:%M:%S UTC")
         origin = (0, 0)
-        dims = self.font.getsize(txt)
+        dims = self.font.getbbox(txt)
         draw.rectangle((origin, (dims[0] + 1, dims[1] + 1)),
                        outline='black', fill='black')
         draw.text(origin, txt, (255, 255, 255), font=self.font)
