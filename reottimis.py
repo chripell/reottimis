@@ -29,3 +29,33 @@ def read_config(props_path: str) -> ConfigParser:
     assert os.path.exists(props_path), f"Path does not exist: {props_path}"
     config.read(props_path)
     return config
+
+
+def is_space_available(directory_path, min_gb=1):
+    """
+    Checks if there is at least min_gb of disk space available
+    on the filesystem containing the given directory.
+
+    :param directory_path: Path to a directory on the target filesystem.
+    :param min_gb: The threshold in Gigabytes.
+    :return: True if space is sufficient, False otherwise.
+    """
+    try:
+        # Get filesystem statistics
+        st = os.statvfs(directory_path)
+
+        # f_frsize: Fundamental file system block size
+        # f_bavail: Free blocks available to non-superusers
+        free_bytes = st.f_bavail * st.f_frsize
+
+        # Calculate threshold: 1 GB = 1024^3 bytes
+        threshold_bytes = min_gb * (1024 ** 3)
+
+        return free_bytes >= threshold_bytes
+
+    except FileNotFoundError:
+        print(f"Error: The directory '{directory_path}' does not exist.")
+        return False
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False

@@ -1,15 +1,15 @@
 [Unit]
 Description=Snaps Attimis Cam pictures
-After=openvpn-client@dabridge.service
-Requires=openvpn-client@dabridge.service
+After=tailscaled.service
+Requires=tailscaled.service
 
 [Service]
 Type=simple
-WorkingDirectory=/
-ExecStart=/mnt/d/chri/reottimis/start.sh
+WorkingDirectory=/home/ubuntu/subitcam
+ExecStart=/home/ubuntu/miniconda3/envs/subitcam/bin/python -u /home/ubuntu/subitcam/reottimis/reottimis_snap.py /home/ubuntu/subitcam/reolink.cfg
 Restart=always
-User=chri
-Group=chri
+User=ubuntu
+Group=ubuntu
 
 [Install]
 WantedBy=multi-user.target

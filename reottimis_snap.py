@@ -19,7 +19,7 @@ import urllib3
 import requests
 import traceback
 from reolinkapi import Camera
-from reottimis import read_config
+from reottimis import read_config, is_space_available
 
 
 class Snapper:
@@ -53,7 +53,7 @@ class Snapper:
         im.save(dest_fname)
         tmp = self.cfg["storage"]["link"] + "_temp.jpg"
         draw = ImageDraw.Draw(im)
-        now = datetime.utcfromtimestamp(tstamp)
+        now = datetime.fromtimestamp(tstamp, UTC)
         txt = now.strftime("%Y-%m-%d %H:%M:%S UTC")
         origin = (0, 0)
         dims = self.font.getbbox(txt)
@@ -73,7 +73,8 @@ class Snapper:
                 time.sleep(0.5)
                 continue
             next_t = int(time.time()) + self.cfg["storage"].getint("every")
-            dest_fname = self.__save_image(now)
+            if is_space_available(self.cfg["storage"]["dir"]):
+                dest_fname = self.__save_image(now)
             print(f"Saved {dest_fname}", flush=True)
 
 

@@ -2,7 +2,7 @@
 
 import sys
 import os
-from reottimis import read_config
+from reottimis import read_config, is_space_available
 import dateparser
 from datetime import datetime, timedelta
 from skyfield import almanac
@@ -12,6 +12,58 @@ from pytz import timezone
 from tzlocal import get_localzone
 import subprocess
 import re
+from tempfile import TemporaryDirectory
+import time
+
+
+def cleanup_old_files_and_empty_dirs(directory_path, days_threshold, dry_run=True):
+    """
+    Deletes files older than days_threshold and removes empty directories.
+
+    :param directory_path: The root directory to start cleaning.
+    :param days_threshold: Number of days limit.
+    :param dry_run: If True, only prints actions without deleting.
+    """
+    seconds_threshold = days_threshold * 86400
+    current_time = time.time()
+
+    # We use topdown=False to ensure we handle children before parent directories
+    for root, dirs, files in os.walk(directory_path, topdown=False):
+
+        # 1. Process Files
+        for name in files:
+            file_path = os.path.join(root, name)
+            try:
+                file_mod_time = os.path.getmtime(file_path)
+                if (current_time - file_mod_time) > seconds_threshold:
+                    if dry_run:
+                        print(f"[DRY RUN] Would delete file: {file_path}")
+                    else:
+                        os.remove(file_path)
+                        print(f"Deleted file: {file_path}")
+            except OSError as e:
+                print(f"Error accessing file {file_path}: {e}")
+
+        # 2. Process Directories
+        for name in dirs:
+            dir_path = os.path.join(root, name)
+            try:
+                # Check if the directory is empty after potential file deletions
+                if not os.listdir(dir_path):
+                    if dry_run:
+                        print(f"[DRY RUN] Would delete empty directory: {dir_path}")
+                    else:
+                        os.rmdir(dir_path)
+                        print(f"Deleted empty directory: {dir_path}")
+            except OSError as e:
+                print(f"Error accessing directory {dir_path}: {e}")
+
+
+def force_link(src, dest):
+    with TemporaryDirectory(dir=os.path.dirname(dest)) as d:
+        tmpname = os.path.join(d, "foo")
+        os.link(src, tmpname)
+        os.replace(tmpname, dest)
 
 
 class Videoer:
@@ -105,6 +157,8 @@ class Videoer:
         #     f"{dest}", shell=True)
         p.wait()
         print(f"File {dest} created.", flush=True)
+        if self.cfg['storage']['link_video']:
+            force_link(dest, self.cfg['storage']['link_video'])
         os.unlink("/tmp/listona")
 
 
@@ -137,6 +191,18 @@ def main():
     if len(sys.argv) > 2:
         cfg_fname = sys.argv[2]
     cfg = read_config(cfg_fname)
+    if cfg['keep']['keep_pics_days']:
+        cleanup_old_files_and_empty_dirs(
+            cfg['storage']['dir'],
+            int(cfg['keep']['keep_pics_days']),
+            dry_run=False)
+    if cfg['keep']['keep_videos_days']:
+        cleanup_old_files_and_empty_dirs(
+            cfg['storage']['video'],
+            int(cfg['keep']['keep_videos_days']),
+            dry_run=False)
+    if not is_space_available(cfg["storage"]["video"]):
+        return
     videoer = Videoer(when, cfg)
     videoer.generate_video()
     generate_index(cfg)
